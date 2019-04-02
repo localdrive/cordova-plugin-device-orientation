@@ -43,6 +43,9 @@ import android.os.Looper;
  */
 public class CompassListener extends CordovaPlugin implements SensorEventListener {
 
+    Sensor accelerometer;
+    Sensor magnetometer;
+
     public static int STOPPED = 0;
     public static int STARTING = 1;
     public static int RUNNING = 2;
@@ -55,6 +58,9 @@ public class CompassListener extends CordovaPlugin implements SensorEventListene
     long timeStamp;                     // time of most recent value
     long lastAccessTime;                // time the value was last retrieved
     int accuracy;                       // accuracy of the sensor
+    float[] mGravity;
+    float[] mGeomagnetic;
+
 
     private SensorManager sensorManager;// Sensor manager
     Sensor mSensor;                     // Compass sensor returned by sensor manager
@@ -163,7 +169,14 @@ public class CompassListener extends CordovaPlugin implements SensorEventListene
             return this.status;
         }
 
-        // Get compass sensor from sensor manager
+        accelerometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        this.sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        this.sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        this.setStatus(CompassListener.STARTING);
+        this.lastAccessTime = System.currentTimeMillis();
+
+        /*// Get compass sensor from sensor manager
         @SuppressWarnings("deprecation")
         List<Sensor> list = this.sensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
 
@@ -178,7 +191,7 @@ public class CompassListener extends CordovaPlugin implements SensorEventListene
         // If error, then set status to error
         else {
             this.setStatus(CompassListener.ERROR_FAILED_TO_START);
-        }
+        }*/
 
         return this.status;
     }
@@ -215,9 +228,21 @@ public class CompassListener extends CordovaPlugin implements SensorEventListene
      * @param SensorEvent event
      */
     public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+            mGravity = event.values;
+
+        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+            mGeomagnetic = event.values;
 
         // We only care about the orientation as far as it refers to Magnetic North
-        float heading = event.values[0];
+        float heading = 0;
+        float R[] = new float[9];
+        float I[] = new float[9];
+        float[] orientation = new float[3];
+
+        if (mGravity != null && mGeomagnetic != null && SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic)) {
+            heading = (int) ( Math.toDegrees( SensorManager.getOrientation( R, orientation )[0] ) + 360 ) % 360;
+        }
 
         // Save heading
         this.timeStamp = System.currentTimeMillis();
