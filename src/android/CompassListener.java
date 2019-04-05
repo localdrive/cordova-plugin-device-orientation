@@ -171,27 +171,15 @@ public class CompassListener extends CordovaPlugin implements SensorEventListene
 
         accelerometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        this.sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        this.sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-        this.setStatus(CompassListener.STARTING);
-        this.lastAccessTime = System.currentTimeMillis();
+        boolean accelerometerOk = this.sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        boolean magnetometerOk = this.sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
-        /*// Get compass sensor from sensor manager
-        @SuppressWarnings("deprecation")
-        List<Sensor> list = this.sensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
-
-        // If found, then register as listener
-        if (list != null && list.size() > 0) {
-            this.mSensor = list.get(0);
-            this.sensorManager.registerListener(this, this.mSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            this.lastAccessTime = System.currentTimeMillis();
+        if (accelerometerOk && magnetometerOk) {
             this.setStatus(CompassListener.STARTING);
-        }
-
-        // If error, then set status to error
-        else {
+            this.lastAccessTime = System.currentTimeMillis();
+        } else {
             this.setStatus(CompassListener.ERROR_FAILED_TO_START);
-        }*/
+        }
 
         return this.status;
     }
